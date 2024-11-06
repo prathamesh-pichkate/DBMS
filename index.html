@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>User Management</title>
+  </head>
+  <body>
+    <h1>User Management</h1>
+    <div>
+      <input type="text" id="name" placeholder="Name" />
+      <input type="number" id="age" placeholder="Age" />
+      <button onclick="addUser()">Add User</button>
+    </div>
+
+    <h2>Update User</h2>
+    <div>
+      <input type="text" id="updateName" placeholder="New Name" />
+      <input type="number" id="updateAge" placeholder="New Age" />
+      <button onclick="updateUser()">Update User</button>
+    </div>
+
+    <div id="users"></div>
+
+    <script>
+      const apiUrl = "http://localhost:5000";
+
+      let selectedUserId = null;
+
+      // Add a user
+      async function addUser() {
+        const name = document.getElementById("name").value;
+        const age = document.getElementById("age").value;
+
+        await fetch(`${apiUrl}/add`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, age }),
+        });
+        loadUsers();
+      }
+
+      // Load all users and display them
+      async function loadUsers() {
+        const response = await fetch(`${apiUrl}/users`);
+        const users = await response.json();
+        document.getElementById("users").innerHTML = users
+          .map(
+            (user) =>
+              `<p>${user.name}, ${user.age} 
+                <button onclick="deleteUser(${user.id})">Delete</button>
+                <button onclick="editUser(${user.id}, '${user.name}', ${user.age})">Edit</button>
+              </p>`
+          )
+          .join("");
+      }
+
+      // Delete a user
+      async function deleteUser(id) {
+        await fetch(`${apiUrl}/delete/${id}`, { method: "DELETE" });
+        loadUsers();
+      }
+
+      // Set user data for editing
+      function editUser(id, name, age) {
+        selectedUserId = id;
+        document.getElementById("updateName").value = name;
+        document.getElementById("updateAge").value = age;
+      }
+
+      // Update user data
+      async function updateUser() {
+        const newName = document.getElementById("updateName").value;
+        const newAge = document.getElementById("updateAge").value;
+
+        if (selectedUserId) {
+          await fetch(`${apiUrl}/edit/${selectedUserId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: newName, age: newAge }),
+          });
+          loadUsers();
+          // Clear input fields after update
+          document.getElementById("updateName").value = "";
+          document.getElementById("updateAge").value = "";
+        } else {
+          alert("Please select a user to update");
+        }
+      }
+
+      loadUsers();
+    </script>
+  </body>
+</html>
